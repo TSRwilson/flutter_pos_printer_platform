@@ -167,6 +167,8 @@ class BluetoothService(private var bluetoothHandler: Handler?) {
         mConnectedDeviceAddress = address
         if ("" != address && bluetoothConnection!!.state == BluetoothConstants.STATE_NONE) {
 //            Log.d(TAG, " ------------- mac Address BT: $address")
+            result.success(false)
+
             bluetoothConnect(address, result)
         } else if (bluetoothConnection!!.state == BluetoothConstants.STATE_CONNECTED) {
             result.success(true)
