@@ -165,11 +165,18 @@ class BluetoothService(private var bluetoothHandler: Handler?) {
         this.result = result
         reconnectBluetooth = bluetoothConnection is BluetoothConnection && autoConnect
         mConnectedDeviceAddress = address
-        if ("" != address && bluetoothConnection!!.state == BluetoothConstants.STATE_NONE) {
-//            Log.d(TAG, " ------------- mac Address BT: $address")
-            result.success(false)
-
+        if (address != "" && bluetoothConnection!!.state == BluetoothConstants.STATE_NONE) {
+           Log.d(TAG, " ------------- mac Address BT: $address")
             bluetoothConnect(address, result)
+
+            val timeoutHandler = Handler(Looper.getMainLooper())
+            timeoutHandler.postDelayed({
+                if (bluetoothConnection!!.state != BluetoothConstants.STATE_CONNECTED) {
+                    // If the connection state is still not connected after 3 seconds, consider it a failure
+                    result.success(false)
+                    bluetoothHandler?.obtainMessage(BluetoothConstants.MESSAGE_STATE_CHANGE, bluetoothConnection!!.state, -1)?.sendToTarget()
+                }
+            }, 3000) // 3 seconds timeout
         } else if (bluetoothConnection!!.state == BluetoothConstants.STATE_CONNECTED) {
             result.success(true)
             bluetoothHandler?.obtainMessage(BluetoothConstants.MESSAGE_STATE_CHANGE, bluetoothConnection!!.state, -1)?.sendToTarget()
