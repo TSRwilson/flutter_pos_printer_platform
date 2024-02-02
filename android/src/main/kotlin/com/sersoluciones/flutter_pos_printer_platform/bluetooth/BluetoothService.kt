@@ -170,13 +170,30 @@ class BluetoothService(private var bluetoothHandler: Handler?) {
             bluetoothConnect(address, result)
 
             val timeoutHandler = Handler(Looper.getMainLooper())
+     
             timeoutHandler.postDelayed({
-                if (bluetoothConnection!!.state != BluetoothConstants.STATE_CONNECTED) {
+                   if (bluetoothConnection == null) {
+                                   Log.d(TAG, " ------------- printer status: had sucessfully printout")
+
+                   }else {
+                         if (bluetoothConnection!!.state != BluetoothConstants.STATE_CONNECTED) {
                     // If the connection state is still not connected after 3 seconds, consider it a failure
                     result.success(false)
                     bluetoothHandler?.obtainMessage(BluetoothConstants.MESSAGE_STATE_CHANGE, bluetoothConnection!!.state, -1)?.sendToTarget()
                 }
+                   }   
+
+           
             }, 3000) // 3 seconds timeout
+
+            bluetoothConnection?.setConnectionStateListener(object : ConnectionStateListener {
+                override fun onConnectionStateChange(newState: Int) {
+                    // If the connection state changes to connected, cancel the timeout handler
+                    if (newState == BluetoothConstants.STATE_CONNECTED) {
+                        timeoutHandler.removeCallbacksAndMessages(null)
+                    }
+                }
+            })
         } else if (bluetoothConnection!!.state == BluetoothConstants.STATE_CONNECTED) {
             result.success(true)
             bluetoothHandler?.obtainMessage(BluetoothConstants.MESSAGE_STATE_CHANGE, bluetoothConnection!!.state, -1)?.sendToTarget()
