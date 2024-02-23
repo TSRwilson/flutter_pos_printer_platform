@@ -99,12 +99,20 @@ class FlutterPosPrinterPlatformPlugin : FlutterPlugin, MethodCallHandler, Plugin
                         }
                         BluetoothConstants.STATE_CONNECTING -> {
                             Log.w(TAG, " -------------------------- connection BT STATE_CONNECTING ")
+
                             eventSink?.success(1)
                         }
                         BluetoothConstants.STATE_NONE -> {
                             Log.w(TAG, " -------------------------- connection BT STATE_NONE ")
+                            if (msg.obj != null)
+                                try {
+                                    val result = msg.obj as Result?
+                                    result?.success(false)
+                                } catch (e: Exception) {
+                                }
                             eventSink?.success(0)
-                            bluetoothService.autoConnectBt()
+                            bluetoothService.removeReconnectHandlers()
+
 
                         }
                         BluetoothConstants.STATE_FAILED -> {

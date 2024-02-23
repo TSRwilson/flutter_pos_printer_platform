@@ -13,7 +13,9 @@ import com.sersoluciones.flutter_pos_printer_platform.models.LocalBluetoothDevic
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.Result
 
-
+interface ConnectionCallback {
+    fun onConnectionComplete(success: Boolean)
+}
 class BluetoothService(private var bluetoothHandler: Handler?) {
     private var scanning = false
     private val handler = Handler(Looper.getMainLooper())
@@ -22,6 +24,7 @@ class BluetoothService(private var bluetoothHandler: Handler?) {
     private val mHandlerAutoConnect = Handler(Looper.getMainLooper())
     private var reconnectBluetooth = false
     private var result: Result? = null
+    private var connectionCallback: ConnectionCallback? = null
 
     val mBluetoothAdapter: BluetoothAdapter by lazy {
         BluetoothAdapter.getDefaultAdapter()
@@ -39,6 +42,9 @@ class BluetoothService(private var bluetoothHandler: Handler?) {
     fun setHandler(handler: Handler?) {
         bluetoothHandler = handler
     }
+
+
+
 
     ////////////////////////////////////////////////////////////////////////////////////////////////
     // Scan bluetooth
@@ -158,6 +164,9 @@ class BluetoothService(private var bluetoothHandler: Handler?) {
 
 
     fun onStartConnection(context: Context, address: String?, result: Result, isBle: Boolean = false, autoConnect: Boolean = false) {
+        var resultSent = false // Flag to track if result has been sent
+
+
         if (bluetoothConnection == null)
             bluetoothConnection =
                 if (isBle) BluetoothBleConnection(mContext = context, bluetoothHandler!!, autoConnect = autoConnect)
@@ -166,40 +175,26 @@ class BluetoothService(private var bluetoothHandler: Handler?) {
         reconnectBluetooth = bluetoothConnection is BluetoothConnection && autoConnect
         mConnectedDeviceAddress = address
         if (address != "" && bluetoothConnection!!.state == BluetoothConstants.STATE_NONE) {
-           Log.d(TAG, " ------------- mac Address BT: $address")
+            Log.d(TAG, " ------------- mac Address BT: $address")
             bluetoothConnect(address, result)
 
-            val timeoutHandler = Handler(Looper.getMainLooper())
-     
-            timeoutHandler.postDelayed({
-                   if (bluetoothConnection == null) {
-                                   Log.d(TAG, " ------------- printer status: had sucessfully printout")
 
-                   }else {
-                         if (bluetoothConnection!!.state != BluetoothConstants.STATE_CONNECTED) {
-                    // If the connection state is still not connected after 3 seconds, consider it a failure
-                    result.success(false)
-                    bluetoothHandler?.obtainMessage(BluetoothConstants.MESSAGE_STATE_CHANGE, bluetoothConnection!!.state, -1)?.sendToTarget()
-                }
-                   }   
 
-           
-            }, 3000) // 3 seconds timeout
 
-            bluetoothConnection?.setConnectionStateListener(object : ConnectionStateListener {
-                override fun onConnectionStateChange(newState: Int) {
-                    // If the connection state changes to connected, cancel the timeout handler
-                    if (newState == BluetoothConstants.STATE_CONNECTED) {
-                        timeoutHandler.removeCallbacksAndMessages(null)
-                    }
-                }
-            })
         } else if (bluetoothConnection!!.state == BluetoothConstants.STATE_CONNECTED) {
+            resultSent = true // Flag to track if result has been sent
+
             result.success(true)
             bluetoothHandler?.obtainMessage(BluetoothConstants.MESSAGE_STATE_CHANGE, bluetoothConnection!!.state, -1)?.sendToTarget()
+            connectionCallback?.onConnectionComplete(true) // Invoke the callback
+
         } else {
+            resultSent = true // Flag to track if result has been sent
+
             result.success(false)
             bluetoothHandler?.obtainMessage(BluetoothConstants.MESSAGE_STATE_CHANGE, bluetoothConnection!!.state, -1)?.sendToTarget()
+            connectionCallback?.onConnectionComplete(true) // Invoke the callback
+
         }
     }
 
