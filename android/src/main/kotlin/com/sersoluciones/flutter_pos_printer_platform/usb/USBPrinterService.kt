@@ -224,22 +224,27 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
                         byteData[i] = temp[i] as Byte
                     }
                     var b = 0
-                    if (mUsbDeviceConnection != null) {
-                        if (byteData.size > chunkSize) {
-                            var chunks: Int = byteData.size / chunkSize
-                            if (byteData.size % chunkSize > 0) {
-                                ++chunks
-                            }
-                            for (i in 0 until chunks) {
-//                                val buffer: ByteArray = byteData.copyOfRange(i * chunkSize, chunkSize + i * chunkSize)
-                                val buffer: ByteArray = Arrays.copyOfRange(byteData, i * chunkSize, chunkSize + i * chunkSize)
-                                b = mUsbDeviceConnection!!.bulkTransfer(mEndPoint, buffer, chunkSize, 100000)
-                            }
-                        } else {
-                            b = mUsbDeviceConnection!!.bulkTransfer(mEndPoint, byteData, byteData.size, 100000)
-                        }
-                        Log.i(LOG_TAG, "Return code: $b")
-                    }
+                if (mUsbDeviceConnection != null && mEndPoint != null) {
+    val chunks: Int = (byteData.size + chunkSize - 1) / chunkSize  // Ensure ceiling for chunk count
+    for (i in 0 until chunks) {
+        val buffer: ByteArray = Arrays.copyOfRange(byteData, i * chunkSize, Math.min(byteData.size, (i + 1) * chunkSize))
+        b = mUsbDeviceConnection!!.bulkTransfer(mEndPoint, buffer, buffer.size, 100000)
+
+        if (b < 0) {
+            Log.e(LOG_TAG, "Failed to send data chunk $i with error code: $b")
+            break  // Stop if any chunk fails
+        } else {
+            Log.i(LOG_TAG, "Sent chunk $i successfully")
+        }
+
+        // Optional delay to avoid overload
+        Thread.sleep(50)
+    }
+    Log.i(LOG_TAG, "Data transfer completed with return code: $b")
+} else {
+    Log.e(LOG_TAG, "USB connection or endpoint is null")
+}
+
                 }
             }.start()
             return true
