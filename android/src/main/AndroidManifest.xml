@@ -22,4 +22,6 @@
     <!-- Needed only if your app communicates with already-paired Bluetooth
            devices. -->
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <uses-feature android:name="android.hardware.usb.host" />
+    <uses-permission android:name="android.permission.USB_PERMISSION" />
 </manifest>

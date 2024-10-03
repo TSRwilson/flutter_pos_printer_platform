@@ -74,6 +74,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
     }
 
 
+
     fun init(reactContext: Context?) {
         mContext = reactContext
         mUSBManager = mContext!!.getSystemService(Context.USB_SERVICE) as UsbManager
