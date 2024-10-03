@@ -161,20 +161,17 @@ class UsbPrinterConnector implements PrinterConnector<UsbPrinterInput> {
     } else if (Platform.isWindows) {
       Map<String, dynamic> params = {"name": model?.name ?? name};
       return await flutterPrinterChannel.invokeMethod(
-                  'connectPrinter', params) ==
-              1
-          ? true
-          : false;
+                  'connectPrinter', params);
     }
     return false;
   }
 
   Future<bool> _close() async {
-    if (Platform.isWindows || Platform.isAndroid)
-      return await flutterPrinterChannel.invokeMethod('close') == 1
-          ? true
-          : false;
-    return false;
+    if (Platform.isWindows || Platform.isAndroid) {
+      return await flutterPrinterChannel.invokeMethod('close');
+    } else {
+      return false;
+    }
   }
 
   @override
