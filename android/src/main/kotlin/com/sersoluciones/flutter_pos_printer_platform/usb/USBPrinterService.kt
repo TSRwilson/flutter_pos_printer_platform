@@ -145,9 +145,11 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
                         }
 
                         // Register the receiver to listen for permission results
+                        val intentFilter = IntentFilter(ACTION_USB_PERMISSION)
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            mContext!!.registerReceiver(permissionReceiver, IntentFilter(ACTION_USB_PERMISSION),
-                                Context.RECEIVER_VISIBLE_TO_INSTANT_APPS )
+                            mContext!!.registerReceiver(permissionReceiver, intentFilter)
+                        } else {
+                            mContext!!.registerReceiver(permissionReceiver, intentFilter)
                         }
                         Log.v(LOG_TAG, "Requesting permission for device: vendor_id: ${usbDevice.vendorId}, product_id: ${usbDevice.productId}")
 
