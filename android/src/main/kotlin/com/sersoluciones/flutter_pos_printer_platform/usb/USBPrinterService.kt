@@ -41,7 +41,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
                     val usbDevice: UsbDevice? = intent?.getParcelableExtra(UsbManager.EXTRA_DEVICE)
 
                     if (usbDevice != null) {
-                        if (intent?.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false) == true) {
+                        if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                             Log.i(
                                 LOG_TAG,
                                 "Success get permission for device ${usbDevice.deviceId}, vendor_id: ${usbDevice.vendorId} product_id: ${usbDevice.productId}"
@@ -55,10 +55,11 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
                             mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
                         }
                     } else {
-                        Log.e(LOG_TAG, "USB device is null, could not retrieve permission result")
+                        Log.e(LOG_TAG, "UsbDevice is null. Intent extras: " + intent?.extras)
                         state = STATE_USB_NONE
                         mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
                     }
+
 
                 }
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED == action) {
@@ -147,6 +148,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
                             mContext!!.registerReceiver(permissionReceiver, IntentFilter(ACTION_USB_PERMISSION),
                                 Context.RECEIVER_VISIBLE_TO_INSTANT_APPS )
                         }
+                        Log.v(LOG_TAG, "Requesting permission for device: vendor_id: ${usbDevice.vendorId}, product_id: ${usbDevice.productId}")
 
                         // Request permission for the USB device
                         mUSBManager?.requestPermission(usbDevice, permissionIntent)
