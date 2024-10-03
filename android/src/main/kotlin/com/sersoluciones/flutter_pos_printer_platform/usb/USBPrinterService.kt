@@ -33,34 +33,33 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
     }
 
 
- private val mUsbDeviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+    private val mUsbDeviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
-            if (ACTION_USB_PERMISSION == action) {
-                synchronized(this) {
-                    val usbDevice: UsbDevice? = intent?.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+            Log.d(LOG_TAG, "Received broadcast with action: $action")
 
-                    if (usbDevice != null) {
-                        if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                            Log.i(
-                                LOG_TAG,
-                                "Success get permission for device ${usbDevice.deviceId}, vendor_id: ${usbDevice.vendorId} product_id: ${usbDevice.productId}"
-                            )
-                            mUsbDevice = usbDevice
-                            state = STATE_USB_CONNECTED
-                            mHandler?.obtainMessage(STATE_USB_CONNECTED)?.sendToTarget()
-                        } else {
-                            Toast.makeText(context, mContext?.getString(R.string.user_refuse_perm) + ": ${usbDevice.deviceName}", Toast.LENGTH_LONG).show()
-                            state = STATE_USB_NONE
-                            mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
-                        }
+            if (ACTION_USB_PERMISSION == action) {
+                val usbDevice: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                Log.d(LOG_TAG, "UsbDevice from intent: $usbDevice")
+
+                if (usbDevice != null) {
+                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                        Log.i(
+                            LOG_TAG,
+                            "Success getting permission for device ${usbDevice.deviceId}, vendor_id: ${usbDevice.vendorId}, product_id: ${usbDevice.productId}"
+                        )
+                        mUsbDevice = usbDevice
+                        state = STATE_USB_CONNECTED
+                        mHandler?.obtainMessage(STATE_USB_CONNECTED)?.sendToTarget()
                     } else {
-                        Log.e(LOG_TAG, "UsbDevice is null. Intent extras: " + intent?.extras)
+                        Log.e(LOG_TAG, "Permission denied for device")
                         state = STATE_USB_NONE
                         mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
                     }
-
-
+                } else {
+                    Log.e(LOG_TAG, "UsbDevice is null. Intent extras: ${intent.extras}")
+                    state = STATE_USB_NONE
+                    mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
                 }
             } else if (UsbManager.ACTION_USB_DEVICE_DETACHED == action) {
                 if (mUsbDevice != null) {
@@ -72,6 +71,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
             }
         }
     }
+
 
 
 
