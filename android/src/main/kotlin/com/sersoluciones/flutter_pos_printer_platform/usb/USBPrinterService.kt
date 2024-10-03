@@ -34,6 +34,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
     }
 
     private val mUsbDeviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+        @TargetApi(Build.VERSION_CODES.N)
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
             if (ACTION_USB_PERMISSION == action) {
@@ -80,7 +81,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
         Log.v(LOG_TAG, "ESC/POS Printer initialized")
     }
 
-    fun closeConnectionIfExists(): Boolean {
+    fun closeConnectionIfExists() {
         if (mUsbDeviceConnection != null) {
             mUsbDeviceConnection!!.releaseInterface(mUsbInterface)
             mUsbDeviceConnection!!.close()
