@@ -1,12 +1,14 @@
 package com.sersoluciones.flutter_pos_printer_platform.usb
 
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.hardware.usb.*
+import android.os.Build
 import android.os.Handler
 import android.util.Base64
 import android.util.Log
@@ -14,6 +16,7 @@ import android.widget.Toast
 import com.sersoluciones.flutter_pos_printer_platform.R
 import java.nio.charset.Charset
 import java.util.*
+import java.util.concurrent.CompletableFuture
 
 class USBPrinterService private constructor(private var mHandler: Handler?) {
     private var mContext: Context? = null
@@ -24,6 +27,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
     private var mUsbInterface: UsbInterface? = null
     private var mEndPoint: UsbEndpoint? = null
     var state: Int = STATE_USB_NONE
+    private var permissionFuture: CompletableFuture<Boolean>? = null
 
     fun setHandler(handler: Handler?) {
         mHandler = handler
@@ -32,37 +36,32 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
     private val mUsbDeviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
-            if ((ACTION_USB_PERMISSION == action)) {
+            if (ACTION_USB_PERMISSION == action) {
                 synchronized(this) {
                     val usbDevice: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
                     if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
                         Log.i(
                             LOG_TAG,
-                            "Success get permission for device ${usbDevice?.deviceId}, vendor_id: ${usbDevice?.vendorId} product_id: ${usbDevice?.productId}"
+                            "Success get permission for device ${usbDevice?.deviceId}, vendor_id: ${usbDevice?.vendorId}, product_id: ${usbDevice?.productId}"
                         )
                         mUsbDevice = usbDevice
                         state = STATE_USB_CONNECTED
                         mHandler?.obtainMessage(STATE_USB_CONNECTED)?.sendToTarget()
+                        permissionFuture?.complete(true)  // Permission granted
                     } else {
-                        Toast.makeText(context, mContext?.getString(R.string.user_refuse_perm) + ": ${usbDevice!!.deviceName}", Toast.LENGTH_LONG).show()
+                        Log.i(LOG_TAG, "Permission denied for device")
                         state = STATE_USB_NONE
                         mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
+                        permissionFuture?.complete(false)  // Permission denied
                     }
                 }
-            } else if ((UsbManager.ACTION_USB_DEVICE_DETACHED == action)) {
-
+            } else if (UsbManager.ACTION_USB_DEVICE_DETACHED == action) {
                 if (mUsbDevice != null) {
                     Toast.makeText(context, mContext?.getString(R.string.device_off), Toast.LENGTH_LONG).show()
                     closeConnectionIfExists()
                     state = STATE_USB_NONE
                     mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
                 }
-
-            } else if ((UsbManager.ACTION_USB_DEVICE_ATTACHED == action)) {
-//                if (mUsbDevice != null) {
-//                    Toast.makeText(context, "USB device has been turned off", Toast.LENGTH_LONG).show()
-//                    closeConnectionIfExists()
-//                }
             }
         }
     }
@@ -81,7 +80,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
         Log.v(LOG_TAG, "ESC/POS Printer initialized")
     }
 
-    fun closeConnectionIfExists() {
+    fun closeConnectionIfExists(): Boolean {
         if (mUsbDeviceConnection != null) {
             mUsbDeviceConnection!!.releaseInterface(mUsbInterface)
             mUsbDeviceConnection!!.close()
@@ -90,6 +89,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
             mUsbDevice = null
             mUsbDeviceConnection = null
         }
+
     }
 
     val deviceList: List<UsbDevice>
@@ -101,8 +101,11 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
             return ArrayList(mUSBManager!!.deviceList.values)
         }
 
-    fun selectDevice(vendorId: Int, productId: Int): Boolean {
-//        Log.v(LOG_TAG, " status usb ______ $state")
+    @TargetApi(Build.VERSION_CODES.N)
+    fun selectDevice(vendorId: Int, productId: Int): CompletableFuture<Boolean> {
+
+            permissionFuture = CompletableFuture()
+
         if ((mUsbDevice == null) || (mUsbDevice!!.vendorId != vendorId) || (mUsbDevice!!.productId != productId)) {
             synchronized(printLock) {
                 closeConnectionIfExists()
@@ -114,17 +117,19 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
                         mUSBManager!!.requestPermission(usbDevice, mPermissionIndent)
                         state = STATE_USB_CONNECTING
                         mHandler?.obtainMessage(STATE_USB_CONNECTING)?.sendToTarget()
-                        return true
+                        return permissionFuture!!  // Return the future, which will be completed later
                     }
                 }
-                return false
+                permissionFuture?.complete(false)  // No device found
             }
         } else {
             mHandler?.obtainMessage(state)?.sendToTarget()
+            permissionFuture?.complete(true)  // Device already connected
         }
 
-        return true
+        return permissionFuture!!  // Return the future immediately, it will complete later
     }
+
 
     private fun openConnection(): Boolean {
         if (mUsbDevice == null) {
