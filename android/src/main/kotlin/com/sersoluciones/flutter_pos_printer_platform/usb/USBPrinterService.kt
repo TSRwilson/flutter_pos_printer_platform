@@ -120,38 +120,11 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
                         closeConnectionIfExists()
 
                         // Create a PendingIntent to capture the user's response to the permission request
-                        val permissionIntent = PendingIntent.getBroadcast(
-                            mContext, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE
-                        )
-                        val permissionReceiver = object : BroadcastReceiver() {
-                            override fun onReceive(context: Context?, intent: Intent?) {
-                                synchronized(this) {
-                                    if (ACTION_USB_PERMISSION == intent?.action) {
-                                        val device: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
-                                        if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                                            if (device != null) {
-                                                Log.v(LOG_TAG, "Permission granted for device: ${device.vendorId}, ${device.productId}")
-                                                state = STATE_USB_CONNECTED
-                                                mHandler?.obtainMessage(STATE_USB_CONNECTED)?.sendToTarget()
-                                            }
-                                        } else {
-                                            Log.v(LOG_TAG, "Permission denied for device")
-                                            state = STATE_USB_DISCONNECTED
-                                            mHandler?.obtainMessage(STATE_USB_DISCONNECTED)?.sendToTarget()
-                                        }
-                                    }
-                                }
-                            }
-                        }
-
-                        // Register the receiver to listen for permission results
-                        val intentFilter = IntentFilter(ACTION_USB_PERMISSION)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                            mContext!!.registerReceiver(permissionReceiver, intentFilter)
+                        val permissionIntent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            PendingIntent.getBroadcast(mContext, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_MUTABLE)
                         } else {
-                            mContext!!.registerReceiver(permissionReceiver, intentFilter)
+                            PendingIntent.getBroadcast(mContext, 0, Intent(ACTION_USB_PERMISSION), PendingIntent.FLAG_IMMUTABLE)
                         }
-                        Log.v(LOG_TAG, "Requesting permission for device: vendor_id: ${usbDevice.vendorId}, product_id: ${usbDevice.productId}")
 
                         // Request permission for the USB device
                         mUSBManager?.requestPermission(usbDevice, permissionIntent)
@@ -171,6 +144,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
         }
         return true
     }
+
 
 
     private fun openConnection(): Boolean {
