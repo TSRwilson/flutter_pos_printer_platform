@@ -101,30 +101,66 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
             return ArrayList(mUSBManager!!.deviceList.values)
         }
 
-    fun selectDevice(vendorId: Int, productId: Int): Boolean {
-//        Log.v(LOG_TAG, " status usb ______ $state")
-        if ((mUsbDevice == null) || (mUsbDevice!!.vendorId != vendorId) || (mUsbDevice!!.productId != productId)) {
-            synchronized(printLock) {
-                closeConnectionIfExists()
-                val usbDevices: List<UsbDevice> = deviceList
-                for (usbDevice: UsbDevice in usbDevices) {
-                    if ((usbDevice.vendorId == vendorId) && (usbDevice.productId == productId)) {
-                        Log.v(LOG_TAG, "Request for device: vendor_id: " + usbDevice.vendorId + ", product_id: " + usbDevice.productId)
-                        closeConnectionIfExists()
-                        mUSBManager!!.requestPermission(usbDevice, mPermissionIndent)
-                        state = STATE_USB_CONNECTING
-                        mHandler?.obtainMessage(STATE_USB_CONNECTING)?.sendToTarget()
-                        return true
-                    }
-                }
-                return false
-            }
-        } else {
-            mHandler?.obtainMessage(state)?.sendToTarget()
-        }
+ fun selectDevice(vendorId: Int, productId: Int): Boolean {
+    if ((mUsbDevice == null) || (mUsbDevice!!.vendorId != vendorId) || (mUsbDevice!!.productId != productId)) {
+        synchronized(printLock) {
+            closeConnectionIfExists()
+            val usbDevices: List<UsbDevice> = deviceList
+            for (usbDevice: UsbDevice in usbDevices) {
+                if ((usbDevice.vendorId == vendorId) && (usbDevice.productId == productId)) {
+                    Log.v(LOG_TAG, "Request for device: vendor_id: ${usbDevice.vendorId}, product_id: ${usbDevice.productId}")
+                    closeConnectionIfExists()
 
-        return true
+                    // Create a PendingIntent to capture the user's response to the permission request
+                    val permissionIntent = PendingIntent.getBroadcast(
+                        context, 0, Intent(UsbManager.ACTION_USB_DEVICE_PERMISSION), 0
+                    )
+                    val permissionReceiver = object : BroadcastReceiver() {
+                        override fun onReceive(context: Context?, intent: Intent?) {
+                            synchronized(this) {
+                                if (UsbManager.ACTION_USB_DEVICE_PERMISSION == intent?.action) {
+                                    val device: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+                                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
+                                        if (device != null) {
+                                            Log.v(LOG_TAG, "Permission granted for device: ${device.vendorId}, ${device.productId}")
+                                            state = STATE_USB_CONNECTED
+                                            mHandler?.obtainMessage(STATE_USB_CONNECTED)?.sendToTarget()
+                                            // Permission granted, perform the required action
+                                            return true // Return true when permission is granted
+                                        }
+                                    } else {
+                                        Log.v(LOG_TAG, "Permission denied for device")
+                                        state = STATE_USB_DISCONNECTED
+                                        mHandler?.obtainMessage(STATE_USB_DISCONNECTED)?.sendToTarget()
+                                        return false // Return false when permission is denied
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Register the receiver to listen for permission results
+                    context.registerReceiver(permissionReceiver, IntentFilter(UsbManager.ACTION_USB_DEVICE_PERMISSION))
+
+                    // Request permission for the USB device
+                    mUSBManager?.requestPermission(usbDevice, permissionIntent)
+
+                    state = STATE_USB_CONNECTING
+                    mHandler?.obtainMessage(STATE_USB_CONNECTING)?.sendToTarget()
+
+                    // Break the loop as we already found the device and requested permission
+                    break
+                }
+            }
+            return false
+        }
+    } else {
+        // Device is already connected, no need to request permission again
+        mHandler?.obtainMessage(state)?.sendToTarget()
     }
+    return true
+}
+
 
     private fun openConnection(): Boolean {
         if (mUsbDevice == null) {
@@ -238,7 +274,7 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
         }
 
         // Optional delay to avoid overload
-        Thread.sleep(50)
+        Thread.sleep(200)
     }
     Log.i(LOG_TAG, "Data transfer completed with return code: $b")
 } else {
