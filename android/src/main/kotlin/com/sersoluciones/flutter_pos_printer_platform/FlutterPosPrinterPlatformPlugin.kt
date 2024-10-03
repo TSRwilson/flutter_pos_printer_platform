@@ -363,8 +363,14 @@ class FlutterPosPrinterPlatformPlugin : FlutterPlugin, MethodCallHandler, Plugin
 
     private fun closeConn(result: Result) {
         adapter.setHandler(usbHandler)
-        adapter.closeConnectionIfExists()
-        result.success(true)
+
+        val isConnectionClosed = adapter.closeConnectionIfExists()
+
+        if (isConnectionClosed) {
+            result.success(true)  // Connection was closed successfully
+        } else {
+            result.success(false)  // No connection to close
+        }
     }
 
     private fun printText(text: String?, result: Result) {

@@ -81,16 +81,18 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
         Log.v(LOG_TAG, "ESC/POS Printer initialized")
     }
 
-    fun closeConnectionIfExists() {
-        if (mUsbDeviceConnection != null) {
+    fun closeConnectionIfExists(): Boolean {
+        return if (mUsbDeviceConnection != null) {
             mUsbDeviceConnection!!.releaseInterface(mUsbInterface)
             mUsbDeviceConnection!!.close()
             mUsbInterface = null
             mEndPoint = null
             mUsbDevice = null
             mUsbDeviceConnection = null
+            true  // Connection was closed
+        } else {
+            false // No connection to close
         }
-
     }
 
     val deviceList: List<UsbDevice>
