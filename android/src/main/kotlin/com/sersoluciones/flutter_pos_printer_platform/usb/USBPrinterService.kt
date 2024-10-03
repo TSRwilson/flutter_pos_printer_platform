@@ -33,44 +33,45 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
     }
 
 
-
-    private val mUsbDeviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
+ private val mUsbDeviceReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val action = intent.action
-            if ((ACTION_USB_PERMISSION == action)) {
+            if (ACTION_USB_PERMISSION == action) {
                 synchronized(this) {
-                    val usbDevice: UsbDevice? = intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
-                    if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                        Log.i(
-                            LOG_TAG,
-                            "Success get permission for device ${usbDevice?.deviceId}, vendor_id: ${usbDevice?.vendorId} product_id: ${usbDevice?.productId}"
-                        )
-                        mUsbDevice = usbDevice
-                        state = STATE_USB_CONNECTED
-                        mHandler?.obtainMessage(STATE_USB_CONNECTED)?.sendToTarget()
+                    val usbDevice: UsbDevice? = intent?.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+
+                    if (usbDevice != null) {
+                        if (intent?.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false) == true) {
+                            Log.i(
+                                LOG_TAG,
+                                "Success get permission for device ${usbDevice.deviceId}, vendor_id: ${usbDevice.vendorId} product_id: ${usbDevice.productId}"
+                            )
+                            mUsbDevice = usbDevice
+                            state = STATE_USB_CONNECTED
+                            mHandler?.obtainMessage(STATE_USB_CONNECTED)?.sendToTarget()
+                        } else {
+                            Toast.makeText(context, mContext?.getString(R.string.user_refuse_perm) + ": ${usbDevice.deviceName}", Toast.LENGTH_LONG).show()
+                            state = STATE_USB_NONE
+                            mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
+                        }
                     } else {
-                        Toast.makeText(context, mContext?.getString(R.string.user_refuse_perm) + ": ${usbDevice!!.deviceName}", Toast.LENGTH_LONG).show()
+                        Log.e(LOG_TAG, "USB device is null, could not retrieve permission result")
                         state = STATE_USB_NONE
                         mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
                     }
-                }
-            } else if ((UsbManager.ACTION_USB_DEVICE_DETACHED == action)) {
 
+                }
+            } else if (UsbManager.ACTION_USB_DEVICE_DETACHED == action) {
                 if (mUsbDevice != null) {
                     Toast.makeText(context, mContext?.getString(R.string.device_off), Toast.LENGTH_LONG).show()
                     closeConnectionIfExists()
                     state = STATE_USB_NONE
                     mHandler?.obtainMessage(STATE_USB_NONE)?.sendToTarget()
                 }
-
-            } else if ((UsbManager.ACTION_USB_DEVICE_ATTACHED == action)) {
-//                if (mUsbDevice != null) {
-//                    Toast.makeText(context, "USB device has been turned off", Toast.LENGTH_LONG).show()
-//                    closeConnectionIfExists()
-//                }
             }
         }
     }
+
 
     fun init(reactContext: Context?) {
         mContext = reactContext
