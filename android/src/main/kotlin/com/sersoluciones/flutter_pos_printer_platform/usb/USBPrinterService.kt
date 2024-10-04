@@ -80,19 +80,20 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
         mContext!!.registerReceiver(mUsbDeviceReceiver, filter)
         Log.v(LOG_TAG, "ESC/POS Printer initialized")
     }
-
-    fun closeConnectionIfExists(): Boolean {
-        synchronized(printLock) {
-            return
+ fun closeConnectionIfExists(): Boolean {
+    synchronized(printLock) {
+        if (mUsbDeviceConnection != null && mUsbInterface != null) {
             mUsbDeviceConnection!!.releaseInterface(mUsbInterface)
             mUsbDeviceConnection!!.close()
             mUsbInterface = null
             mEndPoint = null
             mUsbDevice = null
             mUsbDeviceConnection = null
-            true  // Connection was closed
+            return true  // Connection was closed
         }
+        return false  // No connection to close
     }
+}
 
     val deviceList: List<UsbDevice>
         get() {
@@ -211,55 +212,44 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
         }
     }
 
-    fun printBytes(bytes: ArrayList<Int>): Boolean {
-        Log.v(LOG_TAG, "Printing bytes")
-        val isConnected = openConnection()
-        if (isConnected) {
-            val chunkSize = mEndPoint!!.maxPacketSize
-            Log.v(LOG_TAG, "Max Packet Size: $chunkSize")
-            Log.v(LOG_TAG, "Connected to device")
-            Thread {
-                synchronized(printLock) {
-                    val vectorData: Vector<Byte> = Vector()
-                    for (i in bytes.indices) {
-                        val `val`: Int = bytes[i]
-                        vectorData.add(`val`.toByte())
-                    }
-                    val temp: Array<Any> = vectorData.toTypedArray()
-                    val byteData = ByteArray(temp.size)
-                    for (i in temp.indices) {
-                        byteData[i] = temp[i] as Byte
-                    }
-                    var b = 0
+fun printBytes(bytes: ArrayList<Int>): Boolean {
+    Log.v(LOG_TAG, "Printing bytes")
+    val isConnected = openConnection()
+    if (isConnected) {
+        Log.v(LOG_TAG, "Connected to device")
+        Thread {
+            synchronized(printLock) {
+                // Convert ArrayList<Int> to ByteArray
+                val vectorData: Vector<Byte> = Vector()
+                for (i in bytes.indices) {
+                    val `val`: Int = bytes[i]
+                    vectorData.add(`val`.toByte())
+                }
+                val byteData = ByteArray(vectorData.size)
+                for (i in vectorData.indices) {
+                    byteData[i] = vectorData[i]
+                }
+
                 if (mUsbDeviceConnection != null && mEndPoint != null) {
-    val chunks: Int = (byteData.size + chunkSize - 1) / chunkSize  // Ensure ceiling for chunk count
-    for (i in 0 until chunks) {
-        val buffer: ByteArray = Arrays.copyOfRange(byteData, i * chunkSize, Math.min(byteData.size, (i + 1) * chunkSize))
-        b = mUsbDeviceConnection!!.bulkTransfer(mEndPoint, buffer, buffer.size, 100000)
+                    val b: Int = mUsbDeviceConnection!!.bulkTransfer(mEndPoint, byteData, byteData.size, 100000)
 
-        if (b < 0) {
-            Log.e(LOG_TAG, "Failed to send data chunk $i with error code: $b")
-            break  // Stop if any chunk fails
-        } else {
-            Log.i(LOG_TAG, "Sent chunk $i successfully")
-        }
-
-        // Optional delay to avoid overload
-        Thread.sleep(200)
+                    if (b < 0) {
+                        Log.e(LOG_TAG, "Failed to send data with error code: $b")
+                    } else {
+                        Log.i(LOG_TAG, "Data transfer completed with return code: $b")
+                    }
+                } else {
+                    Log.e(LOG_TAG, "USB connection or endpoint is null")
+                }
+            }
+        }.start()
+        return true
+    } else {
+        Log.v(LOG_TAG, "Failed to connect to device")
+        return false
     }
-    Log.i(LOG_TAG, "Data transfer completed with return code: $b")
-} else {
-    Log.e(LOG_TAG, "USB connection or endpoint is null")
 }
 
-                }
-            }.start()
-            return true
-        } else {
-            Log.v(LOG_TAG, "Failed to connected to device")
-            return false
-        }
-    }
 
     companion object {
         @SuppressLint("StaticFieldLeak")
