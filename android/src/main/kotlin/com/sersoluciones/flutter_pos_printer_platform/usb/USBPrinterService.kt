@@ -82,7 +82,8 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
     }
 
     fun closeConnectionIfExists(): Boolean {
-        return if (mUsbDeviceConnection != null) {
+        synchronized(printLock) {
+            return
             mUsbDeviceConnection!!.releaseInterface(mUsbInterface)
             mUsbDeviceConnection!!.close()
             mUsbInterface = null
@@ -90,8 +91,6 @@ class USBPrinterService private constructor(private var mHandler: Handler?) {
             mUsbDevice = null
             mUsbDeviceConnection = null
             true  // Connection was closed
-        } else {
-            false // No connection to close
         }
     }
 
