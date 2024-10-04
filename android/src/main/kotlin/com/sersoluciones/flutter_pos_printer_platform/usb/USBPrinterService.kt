@@ -238,9 +238,12 @@ fun printBytes(bytes: ArrayList<Int>): Boolean {
                     } else {
                         Log.i(LOG_TAG, "Data transfer completed with return code: $b")
                     }
+                       Log.i(LOG_TAG, "Sleeping after printing")
+                    Thread.sleep(1000)  // Adjust the sleep time as needed
                 } else {
                     Log.e(LOG_TAG, "USB connection or endpoint is null")
                 }
+                
             }
         }.start()
         return true
