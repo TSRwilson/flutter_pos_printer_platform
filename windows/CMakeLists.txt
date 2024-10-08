@@ -9,10 +9,10 @@ set(PLUGIN_NAME "flutter_pos_printer_platform_image_3_plugin")
 add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 add_library(${PLUGIN_NAME} SHARED
-  "flutter_pos_printer_platform_plugin.cpp"
-  "include/printer.cpp"
-  "include/printer.h"
-  "include/utils.hpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/flutter_pos_printer_platform_plugin.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/printer.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/printer.h"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/utils.hpp"
 )
 apply_standard_settings(${PLUGIN_NAME})
 set_target_properties(${PLUGIN_NAME} PROPERTIES
