@@ -10,7 +10,7 @@ add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 add_library(${PLUGIN_NAME} SHARED
   "${CMAKE_CURRENT_SOURCE_DIR}/flutter_pos_printer_platform_plugin.cpp"
-  "${CMAKE_CURRENT_SOURCE_DIR}/include/flutter_pos_printer_platform"
+  "${CMAKE_CURRENT_SOURCE_DIR}/include/flutter_pos_printer_platform/flutter_pos_printer_platform_plugin.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/include/printer.cpp"
   "${CMAKE_CURRENT_SOURCE_DIR}/include/printer.h"
   "${CMAKE_CURRENT_SOURCE_DIR}/include/utils.hpp"
