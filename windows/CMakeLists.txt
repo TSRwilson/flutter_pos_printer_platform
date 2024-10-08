@@ -10,7 +10,6 @@ add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 add_library(${PLUGIN_NAME} SHARED
   "flutter_pos_printer_platform_plugin.cpp"
-  "include/flutter_pos_printer_platform/flutter_pos_printer_platform_plugin.h"
   "include/printer.cpp"
   "include/printer.h"
   "include/utils.hpp"
@@ -20,8 +19,7 @@ set_target_properties(${PLUGIN_NAME} PROPERTIES
   CXX_VISIBILITY_PRESET hidden)
 target_compile_definitions(${PLUGIN_NAME} PRIVATE FLUTTER_PLUGIN_IMPL)
 target_include_directories(${PLUGIN_NAME} INTERFACE
-"${CMAKE_CURRENT_SOURCE_DIR}/include/flutter_pos_printer_platform"
-)
+  "${CMAKE_CURRENT_SOURCE_DIR}/include")
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter flutter_wrapper_plugin)
 
 # List of absolute paths to libraries that should be bundled with the plugin
