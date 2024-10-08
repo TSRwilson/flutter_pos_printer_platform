@@ -8,7 +8,7 @@
 #include <string>
 #include <variant>
 
-#include "flutter_pos_printer_platform_image_3_plugin.h"
+#include "flutter_pos_printer_platform_plugin.h"
 
 namespace flutter_pos_printer_platform {
 namespace test {

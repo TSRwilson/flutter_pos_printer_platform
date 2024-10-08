@@ -1,5 +1,5 @@
-#ifndef FLUTTER_PLUGIN_flutter_pos_printer_platform_image_3_plugin_H_
-#define FLUTTER_PLUGIN_flutter_pos_printer_platform_image_3_plugin_H_
+#ifndef FLUTTER_PLUGIN_FLUTTER_POS_PRINTER_PLATFORM_PLUGIN_H_
+#define FLUTTER_PLUGIN_FLUTTER_POS_PRINTER_PLATFORM_PLUGIN_H_
 
 #include <flutter/method_channel.h>
 #include <flutter/plugin_registrar_windows.h>
@@ -28,4 +28,4 @@ class FlutterPosPrinterPlatformPlugin : public flutter::Plugin {
 
 }  // namespace flutter_pos_printer_platform
 
-#endif  // FLUTTER_PLUGIN_flutter_pos_printer_platform_image_3_plugin_H_
+#endif  // FLUTTER_PLUGIN_FLUTTER_POS_PRINTER_PLATFORM_PLUGIN_H_
