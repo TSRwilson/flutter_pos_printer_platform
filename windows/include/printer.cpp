@@ -63,7 +63,16 @@ std::vector<Printer> PrintManager::listPrinters()
 
 BOOL PrintManager::pickPrinter(std::string printerName)
 {
-    return OpenPrinterW((LPWSTR)fromUtf8(printerName).c_str(), &_hPrinter, NULL);
+    std::wstring wPrinterName = fromUtf8(printerName);
+    BOOL success = OpenPrinterW((LPWSTR)wPrinterName.c_str(), &_hPrinter, NULL);
+
+    if (!success)
+    {
+        DWORD errorCode = GetLastError();
+        std::cout << "Failed to open printer: " << errorCode << std::endl;
+    }
+
+    return success;
 }
 
 BOOL PrintManager::printBytes(std::vector<uint8_t> data)
