@@ -1,4 +1,4 @@
-#include "include/flutter_pos_printer_platform/flutter_pos_printer_platform_plugin.h"
+#include "include/flutter_pos_printer_platform/flutter_pos_printer_platform_image_3_plugin.h"
 
 // This must be included before many other Windows headers.
 #include <windows.h>
@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 #include <sstream>
+#include <future> // Include for promise/future
 
 #include "include/printer.h"
 
@@ -33,6 +34,10 @@ namespace
     void HandleMethodCall(
         const flutter::MethodCall<flutter::EncodableValue> &method_call,
         std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+
+    // Synchronization
+    std::promise<void> executionPromise;
+    std::future<void> executionFuture = executionPromise.get_future();
   };
 
   // static
@@ -63,7 +68,9 @@ namespace
       const flutter::MethodCall<EncodableValue> &method_call,
       std::unique_ptr<flutter::MethodResult<EncodableValue>> result)
   {
-    // Get arguments the C++ way
+    // Wait for the previous operation (connectPrinter, close, or printBytes) to complete
+    executionFuture.wait();
+
     const auto *args = std::get_if<EncodableMap>(method_call.arguments());
 
     if (method_call.method_name().compare("getList") == 0)
@@ -83,8 +90,8 @@ namespace
             EncodableValue(printer.available);
         list.push_back(map);
       }
-
-      return result->Success(list);
+      result->Success(list);
+      executionPromise.set_value(); // Mark current task as completed
     }
     else if (method_call.method_name().compare("connectPrinter") == 0)
     {
@@ -99,15 +106,20 @@ namespace
         }
 
         auto success = PrintManager::pickPrinter(printerName);
-        return result->Success(EncodableValue(success));
+        result->Success(EncodableValue(success));
+        executionPromise.set_value(); // Mark current task as completed
       }
-
-      return result->Success(EncodableValue(false));
+      else
+      {
+        result->Success(EncodableValue(false));
+        executionPromise.set_value(); // Mark current task as completed
+      }
     }
     else if (method_call.method_name().compare("close") == 0)
     {
       auto success = PrintManager::close();
-      return result->Success(EncodableValue(success));
+      result->Success(EncodableValue(success));
+      executionPromise.set_value(); // Mark current task as completed
     }
     else if (method_call.method_name().compare("printBytes") == 0)
     {
@@ -122,13 +134,24 @@ namespace
         }
 
         auto success = PrintManager::printBytes(bytes);
-        return result->Success(EncodableValue(success));
+        result->Success(EncodableValue(success));
+        executionPromise.set_value(); // Mark current task as completed
+      }
+      else
+      {
+        result->Success(EncodableValue(false));
+        executionPromise.set_value(); // Mark current task as completed
       }
     }
     else
     {
       result->NotImplemented();
+      executionPromise.set_value(); // Mark as completed even if method is not implemented
     }
+
+    // Create a new promise and future for the next operation to wait on
+    executionPromise = std::promise<void>();
+    executionFuture = executionPromise.get_future();
   }
 
 } // namespace
