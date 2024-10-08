@@ -2,11 +2,11 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:flutter_pos_printer_platform_image_3/src/models/printer_device.dart';
+import 'package:flutter_pos_printer_platform/src/models/printer_device.dart';
 import 'package:network_info_plus/network_info_plus.dart';
 
-import 'package:flutter_pos_printer_platform_image_3/discovery.dart';
-import 'package:flutter_pos_printer_platform_image_3/printer.dart';
+import 'package:flutter_pos_printer_platform/discovery.dart';
+import 'package:flutter_pos_printer_platform/printer.dart';
 import 'package:ping_discover_network_forked/ping_discover_network_forked.dart';
 
 class TcpPrinterInput extends BasePrinterInput {
