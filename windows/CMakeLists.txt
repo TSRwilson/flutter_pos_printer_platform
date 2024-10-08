@@ -10,6 +10,7 @@ add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
 add_library(${PLUGIN_NAME} SHARED
   "flutter_pos_printer_platform_plugin.cpp"
+  "include/flutter_pos_printer_platform/flutter_pos_printer_platform_plugin.h"
   "include/printer.cpp"
   "include/printer.h"
   "include/utils.hpp"
