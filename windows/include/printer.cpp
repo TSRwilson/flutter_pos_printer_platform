@@ -4,7 +4,7 @@
 #include <shlwapi.h>
 #include <tchar.h>
 #include <fstream>
-
+#include <iostream>  // Include the iostream header for std::cout
 #include "printer.h"
 #include "utils.hpp"
 
@@ -61,18 +61,38 @@ std::vector<Printer> PrintManager::listPrinters()
     return printers;
 }
 
+
 BOOL PrintManager::pickPrinter(std::string printerName)
 {
     std::wstring wPrinterName = fromUtf8(printerName);
     BOOL success = OpenPrinterW((LPWSTR)wPrinterName.c_str(), &_hPrinter, NULL);
 
-    if (!success)
+    if (success && _hPrinter != INVALID_HANDLE_VALUE)
+    {
+        std::cout << "Successfully opened printer: " << printerName << std::endl;
+        return TRUE;
+    }
+    else
     {
         DWORD errorCode = GetLastError();
-        std::cout << "Failed to open printer: " << errorCode << std::endl;
+        if (errorCode == ERROR_ACCESS_DENIED)
+        {
+            std::cout << "Access denied when trying to open printer: " << printerName << std::endl;
+        }
+        else if (errorCode == ERROR_INVALID_PRINTER_NAME)
+        {
+            std::cout << "Invalid printer name: " << printerName << std::endl;
+        }
+        else if (errorCode == ERROR_PRINTER_NOT_FOUND)
+        {
+            std::cout << "Printer not found or offline: " << printerName << std::endl;
+        }
+        else
+        {
+            std::cout << "Failed to open printer with error code: " << errorCode << std::endl;
+        }
+        return FALSE;
     }
-
-    return success;
 }
 
 BOOL PrintManager::printBytes(std::vector<uint8_t> data)
