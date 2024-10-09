@@ -10,6 +10,7 @@
 #include <map>
 #include <memory>
 #include <sstream>
+#include <iostream>  // Include the iostream header for std::cout
 
 #include "include/printer.h"
 
@@ -99,6 +100,9 @@ namespace
         }
 
         auto success = PrintManager::pickPrinter(printerName);
+
+        std::cout << "pickPrinter completed with success: " << success << std::endl;
+
         return result->Success(EncodableValue(success));
       }
 
