@@ -99,7 +99,7 @@ namespace
           printerName = std::get<std::string>(name_it->second);
         }
 
-        auto success = PrintManager::pickPrinter(printerName);
+        bool success = PrintManager::pickPrinter(printerName);
 
         std::cout << "pickPrinter completed with success: " << success << std::endl;
 
@@ -110,7 +110,7 @@ namespace
     }
     else if (method_call.method_name().compare("close") == 0)
     {
-      auto success = PrintManager::close();
+      bool success = PrintManager::close();
       return result->Success(EncodableValue(success));
     }
     else if (method_call.method_name().compare("printBytes") == 0)
@@ -125,7 +125,7 @@ namespace
           bytes = std::get<std::vector<uint8_t>>(bytes_it->second);
         }
 
-        auto success = PrintManager::printBytes(bytes);
+        bool success = PrintManager::printBytes(bytes);
         return result->Success(EncodableValue(success));
       }
     }
