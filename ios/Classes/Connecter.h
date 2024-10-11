@@ -2,43 +2,45 @@
 //  Connecter.h
 //  GSDK
 //
+
 #import <Foundation/Foundation.h>
 #import "ConnecterBlock.h"
 
-@interface Connecter:NSObject
+@interface Connecter : NSObject
 
-//读取数据
-@property(nonatomic,copy)ReadData readData;
-//连接状态
-@property(nonatomic,copy)ConnectDeviceState state;
+// 读取数据 Read data
+@property (nonatomic, copy, nullable) ReadData readData;
+
+// 连接状态 Connection status
+@property (nonatomic, copy, nullable) ConnectDeviceState state;
 
 /**
  * 方法说明: 连接 // Method description: connect
  */
--(void)connect;
+- (void)connect;
 
 /**
- *  方法说明: 连接到指定设备 // Method description: connect to the specified device
- *  @param connectState 连接状态
+ * 方法说明: 连接到指定设备 // Method description: connect to the specified device
+ * @param connectState 连接状态
  */
--(void)connect:(void(^)(ConnectState state))connectState;
+- (void)connect:(void(^_Nullable)(ConnectState state))connectState;
 
 /**
- * 方法说明: 关闭连接
+ * 方法说明: 关闭连接 // Method description: close connection
  */
--(void)close;
+- (void)close;
 
 /**
- *  发送数据 // send data
- *  向输出流中写入数据 // Write data to the output stream
+ * 发送数据 // send data
+ * 向输出流中写入数据 // Write data to the output stream
  */
--(void)write:(NSData *)data receCallBack:(void(^)(NSData *data))callBack;
--(void)write:(NSData *)data;
+- (void)write:(NSData *_Nonnull)data receCallBack:(void(^_Nullable)(NSData *_Nonnull data))callBack;
+- (void)write:(NSData *_Nonnull)data;
 
 /**
- *  读取数据
- *  @parma data 读取到的数据
+ * 读取数据 // Read data
+ * @param data 读取到的数据 // Data that is read
  */
--(void)read:(void(^)(NSData *data))data;
+- (void)read:(void(^_Nullable)(NSData *_Nonnull data))data;
 
 @end

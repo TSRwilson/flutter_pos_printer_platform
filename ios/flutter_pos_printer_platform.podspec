@@ -19,7 +19,15 @@ A new Flutter plugin project.
   s.dependency 'Flutter'
   s.platform = :ios, '12.0'
 
+  # Import all * .a libraries in the Classes folder
+  s.frameworks = ["SystemConfiguration", "CoreTelephony","WebKit"]
+  s.vendored_libraries = '**/*.a'
+
   # Flutter.framework does not contain a i386 slice.
-  s.pod_target_xcconfig = { 'DEFINES_MODULE' => 'YES', 'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386' }
+  s.pod_target_xcconfig = { 
+  'EXCLUDED_ARCHS[sdk=iphonesimulator*]' => 'i386 arm64' 
+}
+  # s.swift_version = '5.0'
+
   s.swift_version = '5.0'
 end
