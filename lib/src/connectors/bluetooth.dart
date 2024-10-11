@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_pos_printer_platform_image_3/discovery.dart';
-import 'package:flutter_pos_printer_platform_image_3/flutter_pos_printer_platform_image_3.dart';
+import 'package:flutter_pos_printer_platform/discovery.dart';
+import 'package:flutter_pos_printer_platform/flutter_pos_printer_platform_image_3.dart';
 import 'package:rxdart/rxdart.dart';
 
 class BluetoothPrinterInput extends BasePrinterInput {

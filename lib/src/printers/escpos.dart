@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
-import 'package:flutter_pos_printer_platform_image_3/printer.dart';
-import 'package:flutter_pos_printer_platform_image_3/src/utils.dart';
+import 'package:flutter_pos_printer_platform/printer.dart';
+import 'package:flutter_pos_printer_platform/src/utils.dart';
 import 'package:image_v3/image_v3.dart';
 
 class EscPosPrinter<T> extends GenericPrinter<T> {

@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:enum_to_string/enum_to_string.dart';
-import 'package:flutter_pos_printer_platform_image_3/printer.dart';
+import 'package:flutter_pos_printer_platform/printer.dart';
 // import 'package:flutter_star_prnt/flutter_star_prnt.dart';
 
 enum StarEmulation { StarPRNT, StarLine, StarGraphic }
