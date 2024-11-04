@@ -132,7 +132,7 @@ class UsbPrinterConnector implements PrinterConnector<UsbPrinterInput> {
       for (final device in results) {
         var r = await device;
         yield PrinterDevice(
-          name: r['product'],
+          name: r['product'] ?? 'Unknown Product',
           vendorId: r['vendorId'],
           productId: r['productId'],
           // name: r['name'],
@@ -144,7 +144,7 @@ class UsbPrinterConnector implements PrinterConnector<UsbPrinterInput> {
       for (final device in results) {
         var r = await device;
         yield PrinterDevice(
-          name: r['name'],
+          name: r['name'] ?? 'Unknown Product',
           // model: r['model'],
         );
       }
@@ -160,8 +160,7 @@ class UsbPrinterConnector implements PrinterConnector<UsbPrinterInput> {
       return await flutterPrinterChannel.invokeMethod('connectPrinter', params);
     } else if (Platform.isWindows) {
       Map<String, dynamic> params = {"name": model?.name ?? name};
-      return await flutterPrinterChannel.invokeMethod(
-                  'connectPrinter', params);
+      return await flutterPrinterChannel.invokeMethod('connectPrinter', params);
     }
     return false;
   }
