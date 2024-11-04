@@ -50,14 +50,14 @@ class UsbPrinterConnector implements PrinterConnector<UsbPrinterInput> {
       : vendorId = '',
         productId = '',
         name = '' {
-    if (Platform.isAndroid)
+    if (Platform.isAndroid) {
       flutterPrinterEventChannelUSB.receiveBroadcastStream().listen((data) {
         if (data is int) {
-          // log('Received event status usb: $data');
           _status = USBStatus.values[data];
           _statusStreamController.add(_status);
         }
       });
+    }
   }
 
   static UsbPrinterConnector _instance = UsbPrinterConnector._();
@@ -84,93 +84,94 @@ class UsbPrinterConnector implements PrinterConnector<UsbPrinterInput> {
   setProduct(String productId) => this.productId = productId;
   setName(String name) => this.name = name;
 
-  /// Gets the current state of the Bluetooth module
   Stream<USBStatus> get currentStatus async* {
     if (Platform.isAndroid) {
       yield* _statusStream.cast<USBStatus>();
     }
   }
 
-  static DiscoverResult<UsbPrinterInfo> discoverPrinters() async {
-    if (Platform.isAndroid) {
-      final List<dynamic> results =
-          await flutterPrinterChannel.invokeMethod('getList');
-      return results
-          .map((dynamic r) => PrinterDiscovered<UsbPrinterInfo>(
-                name: r['product'],
-                detail: UsbPrinterInfo.Android(
-                  vendorId: r['vendorId'],
-                  productId: r['productId'],
-                  manufacturer: r['manufacturer'],
-                  product: r['product'],
-                  name: r['name'],
-                  deviceId: r['deviceId'],
-                ),
-              ))
-          .toList();
-    }
-    if (Platform.isWindows) {
-      final List<dynamic> results =
-          await flutterPrinterChannel.invokeMethod('getList');
-      return results
-          .map((dynamic result) => PrinterDiscovered<UsbPrinterInfo>(
-                name: result['name'],
-                detail: UsbPrinterInfo.Windows(
-                    isDefault: result['default'],
-                    name: result['name'],
-                    model: result['model']),
-              ))
-          .toList();
+  static Future<List<PrinterDiscovered<UsbPrinterInfo>>>
+      discoverPrinters() async {
+    if (Platform.isAndroid || Platform.isWindows) {
+      final List<dynamic>? results =
+          await flutterPrinterChannel.invokeMethod<List<dynamic>?>('getList');
+      if (results != null) {
+        return results.map((dynamic r) {
+          if (Platform.isAndroid) {
+            return PrinterDiscovered<UsbPrinterInfo>(
+              name: r['product'] ?? 'Unknown Product',
+              detail: UsbPrinterInfo.Android(
+                vendorId: r['vendorId'] ?? '',
+                productId: r['productId'] ?? '',
+                manufacturer: r['manufacturer'] ?? '',
+                product: r['product'] ?? '',
+                name: r['name'] ?? '',
+                deviceId: r['deviceId'] ?? '',
+              ),
+            );
+          } else {
+            return PrinterDiscovered<UsbPrinterInfo>(
+              name: r['name'] ?? 'Unknown Name',
+              detail: UsbPrinterInfo.Windows(
+                isDefault: r['default'] ?? false,
+                name: r['name'] ?? '',
+                model: r['model'] ?? '',
+              ),
+            );
+          }
+        }).toList();
+      }
     }
     return [];
   }
 
   Stream<PrinterDevice> discovery() async* {
-    if (Platform.isAndroid) {
-      final List<dynamic> results =
-          await flutterPrinterChannel.invokeMethod('getList');
-      for (final device in results) {
-        var r = await device;
-        yield PrinterDevice(
-          name: r['product'] ?? 'Unknown Product',
-          vendorId: r['vendorId'],
-          productId: r['productId'],
-          // name: r['name'],
-        );
-      }
-    } else if (Platform.isWindows) {
-      final List<dynamic> results =
-          await flutterPrinterChannel.invokeMethod('getList');
-      for (final device in results) {
-        var r = await device;
-        yield PrinterDevice(
-          name: r['name'] ?? 'Unknown Product',
-          // model: r['model'],
-        );
+    if (Platform.isAndroid || Platform.isWindows) {
+      final List<dynamic>? results =
+          await flutterPrinterChannel.invokeMethod<List<dynamic>?>('getList');
+      if (results != null) {
+        for (final device in results) {
+          yield PrinterDevice(
+            name: device['product'] ?? device['name'] ?? 'Unknown Product',
+            vendorId: device['vendorId'] ?? '',
+            productId: device['productId'] ?? '',
+          );
+        }
       }
     }
   }
 
   Future<bool> _connect({UsbPrinterInput? model}) async {
-    if (Platform.isAndroid) {
-      Map<String, dynamic> params = {
-        "vendor": int.parse(model?.vendorId ?? vendorId),
-        "product": int.parse(model?.productId ?? productId)
-      };
-      return await flutterPrinterChannel.invokeMethod('connectPrinter', params);
-    } else if (Platform.isWindows) {
-      Map<String, dynamic> params = {"name": model?.name ?? name};
-      return await flutterPrinterChannel.invokeMethod('connectPrinter', params);
+    try {
+      if (Platform.isAndroid) {
+        Map<String, dynamic> params = {
+          "vendor": int.tryParse(model?.vendorId ?? vendorId) ?? 0,
+          "product": int.tryParse(model?.productId ?? productId) ?? 0
+        };
+        return await flutterPrinterChannel.invokeMethod<bool>(
+                'connectPrinter', params) ??
+            false;
+      } else if (Platform.isWindows) {
+        Map<String, dynamic> params = {"name": model?.name ?? name};
+        return await flutterPrinterChannel.invokeMethod<bool>(
+                'connectPrinter', params) ??
+            false;
+      }
+    } catch (e) {
+      // Handle error logging or rethrow if necessary
     }
     return false;
   }
 
   Future<bool> _close() async {
-    if (Platform.isWindows || Platform.isAndroid) {
-      return await flutterPrinterChannel.invokeMethod('close');
-    } else {
-      return false;
+    try {
+      if (Platform.isWindows || Platform.isAndroid) {
+        return await flutterPrinterChannel.invokeMethod<bool>('close') ?? false;
+      }
+    } catch (e) {
+      // Handle error logging or rethrow if necessary
     }
+    return false;
   }
 
   @override
@@ -178,8 +179,9 @@ class UsbPrinterConnector implements PrinterConnector<UsbPrinterInput> {
     try {
       return await _connect(model: model);
     } catch (e) {
-      return false;
+      // Handle error logging if necessary
     }
+    return false;
   }
 
   @override
@@ -187,33 +189,28 @@ class UsbPrinterConnector implements PrinterConnector<UsbPrinterInput> {
     try {
       return await _close();
     } catch (e) {
-      return false;
+      // Handle error logging if necessary
     }
+    return false;
   }
 
   @override
   Future<bool> send(List<int> bytes) async {
-    if (Platform.isAndroid)
-      try {
-        // final connected = await _connect();
-        // if (!connected) return false;
+    try {
+      if (Platform.isAndroid) {
         Map<String, dynamic> params = {"bytes": bytes};
-        return await flutterPrinterChannel.invokeMethod('printBytes', params);
-      } catch (e) {
-        return false;
-      }
-    else if (Platform.isWindows)
-      try {
+        return await flutterPrinterChannel.invokeMethod<bool>(
+                'printBytes', params) ??
+            false;
+      } else if (Platform.isWindows) {
         Map<String, dynamic> params = {"bytes": Uint8List.fromList(bytes)};
-        return await flutterPrinterChannel.invokeMethod('printBytes', params) ==
-                1
-            ? true
-            : false;
-      } catch (e) {
-        await this._close();
-        return false;
+        return (await flutterPrinterChannel.invokeMethod<int>(
+                'printBytes', params)) ==
+            1;
       }
-    else
-      return false;
+    } catch (e) {
+      await _close();
+    }
+    return false;
   }
 }
